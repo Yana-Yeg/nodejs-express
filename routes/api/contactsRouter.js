@@ -6,8 +6,7 @@ const {
   getContactById,
   removeContact,
   addContact,
-  putContact,
-  patchContact,
+  updateContact,
 } = require("../../models/contacts");
 
 const {
@@ -17,50 +16,74 @@ const {
 
 router.get("/", async (req, res, next) => {
   const data = await listContacts();
-  res.json(JSON.parse(data));
+  res.status(200).json(JSON.parse(data));
 
   next();
 });
 
 router.get("/:contactId", async (req, res, next) => {
-  // console.log(req.params.id);
-  const data = await getContactById(req.params.id);
-  res.json(JSON.parse(data));
+  const data = await getContactById(req.params.contactId);
+  if (!req.params.contactId) {
+    return res.status(404).json({ status: "Not found" });
+  }
+  res.status(200).json(data);
 
   next();
 });
 
 router.post("/", addPostValidation, async (req, res, next) => {
-  // const { username, email, phone } = req.body;
-  await addContact(req.body);
-  res.json({ message: "contact has already added" });
+  const { name, email, phone } = req.body;
+  const newContact = await addContact(name, email, phone);
+  res.status(201).json({ status: "success", newContact });
 
   next();
 });
 
 router.delete("/:contactId", async (req, res, next) => {
-  await removeContact(req.params.id);
-  res.json({
-    message: `contact with id '${req.params.id}' has already deleted`,
-  });
+  const { contactId } = req.params;
+  const contactById = await getContactById(req.params.contactId);
+  if (!contactById) {
+    return res.status(404).json({ status: "Not found" });
+  } else {
+    await removeContact(contactId);
+    res.status(200).json({ message: "contact deleted" });
+  }
 
   next();
 });
 
 router.put("/:contactId", addPostValidation, async (req, res, next) => {
-  await putContact(req.params.id, req.body);
-  res.json({
-    message: `contact with id '${req.params.id}' has already changed`,
-  });
+  const { contactId } = req.params;
+  const { name, email, phone } = req.body;
+  const contactById = await getContactById(contactId);
+  if (!contactById) {
+    return res.status(404).json({ status: "Not found" });
+  } else {
+    const updateContactItem = await updateContact(contactId, {
+      name,
+      email,
+      phone,
+    });
+    res.status(200).json({ status: "success", updateContactItem });
+  }
 
   next();
 });
 
 router.patch("/:contactId", patchPostValidation, async (req, res, next) => {
-  await patchContact(req.params.id, req.body);
-  res.json({
-    message: `contact with id '${req.params.id}' has already changed`,
-  });
+  const { contactId } = req.params;
+  const { name, email, phone } = req.body;
+  const contactById = await getContactById(contactId);
+  if (!contactById) {
+    return res.status(404).json({ status: "Not found" });
+  } else {
+    const updateContactItem = await updateContact(contactId, {
+      name,
+      email,
+      phone,
+    });
+    res.status(200).json({ status: "success", updateContactItem });
+  }
 
   next();
 });
